@@ -1,0 +1,182 @@
+<?php
+    /*
+    Plugin Name: Hamza-CPT
+    Plugin URI: https://example.com/my-plugin
+    Description: This is a custom plugin for WordPress.
+    Version: 1.0
+    Author: Your Name
+    Author URI: https://example.com
+    License: GPL v2 or later
+    License URI: https://www.gnu.org/licenses/gpl-2.0.html
+    */
+
+    function create_fresh_items_post_type() {
+        $labels = array(
+            'name'               => 'Fresh Items',
+            'singular_name'      => 'Fresh Item',
+            'menu_name'          => 'Fresh Items',
+            'name_admin_bar'     => 'Fresh Item',
+            'add_new'            => 'Add New',
+            'add_new_item'       => 'Add New Fresh Item',
+            'new_item'           => 'New Fresh Item',
+            'edit_item'          => 'Edit Fresh Item',
+            'view_item'          => 'View Fresh Item',
+            'all_items'          => 'All Fresh Items',
+            'search_items'       => 'Search Fresh Items',
+            'parent_item_colon'  => 'Parent Fresh Items:',
+            'not_found'          => 'No fresh items found.',
+            'not_found_in_trash' => 'No fresh items found in Trash.'
+        );
+    
+        $args = array(
+            'labels'             => $labels,
+            'public'             => true,
+            'publicly_queryable' => true,
+            'show_ui'            => true,
+            'show_in_menu'       => true,
+            'query_var'          => true,
+            'rewrite'            => array( 'slug' => 'fresh-items' ),
+            'capability_type'    => 'post',
+            'has_archive'        => true,
+            'hierarchical'       => false,
+            'menu_position'      => null,
+            'supports'           => array( 'title', 'editor', 'thumbnail', 'excerpt' )
+        );
+    
+        register_post_type( 'fresh_items', $args );
+    }
+    add_action( 'init', 'create_fresh_items_post_type' );
+
+
+    function create_fresh_items_taxonomy() {
+        $labels = array(
+            'name'                       => 'Categories',
+            'singular_name'              => 'Category',
+            'search_items'               => 'Search Categories',
+            'all_items'                  => 'All Categories',
+            'parent_item'                => 'Parent Category',
+            'parent_item_colon'          => 'Parent Category:',
+            'edit_item'                  => 'Edit Category',
+            'update_item'                => 'Update Category',
+            'add_new_item'               => 'Add New Category',
+            'new_item_name'              => 'New Category Name',
+            'menu_name'                  => 'Categories',
+        );
+    
+        $args = array(
+            'labels'                     => $labels,
+            'hierarchical'               => true,
+            'public'                     => true,
+            'show_ui'                    => true,
+            'show_admin_column'          => true,
+            'show_in_nav_menus'          => true,
+            'show_tagcloud'              => true,
+        );
+    
+        register_taxonomy( 'fresh_items_category', 'fresh_items', $args );
+    }
+    add_action( 'init', 'create_fresh_items_taxonomy', 0 );
+// Register meta box
+function add_fresh_items_meta_box() {
+    add_meta_box(
+        'fresh_items_meta_box',
+        'Fresh Items Details',
+        'render_fresh_items_meta_box',
+        'fresh_items',
+        'normal',
+        'default'
+    );
+}
+add_action( 'add_meta_boxes', 'add_fresh_items_meta_box' );
+
+// Render meta box content
+function render_fresh_items_meta_box( $post ) {
+    // Retrieve current values of meta fields, if they exist
+    $name = get_post_meta( $post->ID, 'fresh_items_name', true );
+    $description = get_post_meta( $post->ID, 'fresh_items_description', true );
+    $project_type = get_post_meta( $post->ID, 'fresh_items_project_type', true );
+
+    // Output fields
+    ?>
+    <label for="fresh_items_name">Name:</label>
+    <input type="text" name="fresh_items_name" id="fresh_items_name" value="<?php echo esc_attr( $name ); ?>"><br>
+
+    <label for="fresh_items_description">Description:</label>
+    <textarea name="fresh_items_description" id="fresh_items_description"><?php echo esc_textarea( $description ); ?></textarea><br>
+
+    <label for="fresh_items_project_type">Project Type:</label>
+    <input type="text" name="fresh_items_project_type" id="fresh_items_project_type" value="<?php echo esc_attr( $project_type ); ?>"><br>
+    <?php
+}
+
+// Save meta box field values
+function save_fresh_items_meta_box( $post_id ) {
+    // Check if nonce is set
+    // if ( ! isset( $_POST['fresh_items_meta_box_nonce'] ) ) {
+    //     return;
+    // }
+
+    // // Verify nonce
+    // if ( ! wp_verify_nonce( $_POST['fresh_items_meta_box_nonce'], 'fresh_items_meta_box' ) ) {
+    //     return;
+    // }
+
+    // // Check if autosave
+    // if ( defined( 'DOING_AUTOSAVE' ) && DOING_AUTOSAVE ) {
+    //     return;
+    // }
+
+    // Save meta box field values
+    if ( isset( $_POST['fresh_items_name'] ) ) {
+        update_post_meta( $post_id, 'fresh_items_name', sanitize_text_field( $_POST['fresh_items_name'] ) );
+    }
+
+    if ( isset( $_POST['fresh_items_description'] ) ) {
+        update_post_meta( $post_id, 'fresh_items_description', sanitize_textarea_field( $_POST['fresh_items_description'] ) );
+    }
+
+    if ( isset( $_POST['fresh_items_project_type'] ) ) {
+        update_post_meta( $post_id, 'fresh_items_project_type', sanitize_text_field( $_POST['fresh_items_project_type'] ) );
+    }
+}
+add_action( 'save_post', 'save_fresh_items_meta_box' );
+
+// Add custom columns to the post type
+function add_fresh_items_custom_columns( $columns ) {
+    $columns['fresh_items_name'] = 'Name';
+    $columns['fresh_items_description'] = 'Description';
+    return $columns;
+}
+add_filter( 'manage_fresh_items_posts_columns', 'add_fresh_items_custom_columns' );
+
+// Display custom column values
+function display_fresh_items_custom_columns( $column, $post_id ) {
+    switch ( $column ) {
+        case 'fresh_items_name':
+            $name = get_post_meta( $post_id, 'fresh_items_name', true );
+            echo esc_html( $name );
+            break;
+
+        case 'fresh_items_description':
+            $description = get_post_meta( $post_id, 'fresh_items_description', true );
+            echo esc_html( $description );
+            break;
+
+        default:
+            break;
+    }
+}
+add_action( 'manage_fresh_items_posts_custom_column', 'display_fresh_items_custom_columns', 10, 2 );
+
+// Make custom columns sortable
+function make_fresh_items_custom_columns_sortable( $columns ) {
+    $columns['fresh_items_name'] = 'fresh_items_name';
+    $columns['fresh_items_description'] = 'fresh_items_description';
+    return $columns;
+}
+add_filter( 'manage_edit-fresh_items_sortable_columns', 'make_fresh_items_custom_columns_sortable' );
+
+
+    
+
+?>
